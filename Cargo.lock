@@ -802,7 +802,7 @@ dependencies = [
 
 [[package]]
 name = "wechat-voice"
-version = "0.1.9"
+version = "0.2.0"
 dependencies = [
  "wechat-voice-audio",
  "wechat-voice-backend",
@@ -811,7 +811,7 @@ dependencies = [
 
 [[package]]
 name = "wechat-voice-audio"
-version = "0.1.9"
+version = "0.2.0"
 dependencies = [
  "opus",
  "webrtc-vad",
@@ -820,7 +820,7 @@ dependencies = [
 
 [[package]]
 name = "wechat-voice-backend"
-version = "0.1.9"
+version = "0.2.0"
 dependencies = [
  "aes",
  "bytes",
@@ -840,11 +840,11 @@ dependencies = [
 
 [[package]]
 name = "wechat-voice-protocol"
-version = "0.1.9"
+version = "0.2.0"
 
 [[package]]
 name = "wechat-winh"
-version = "0.1.9"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -857,7 +857,7 @@ dependencies = [
 
 [[package]]
 name = "wechat-winh-bridge"
-version = "0.1.9"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
