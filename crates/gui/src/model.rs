@@ -118,10 +118,10 @@ mod tests {
     fn status_reader_accepts_protocol_and_rejects_oversized_or_partial_files() {
         let path =
             std::env::temp_dir().join(format!("wechat-gui-status-{}.json", std::process::id()));
-        std::fs::write(&path, r#"{"backend":"wechat","phase":"armed","microphone":"JZAO","peak":21218,"partials":2,"finals":1,"last_error":"","pid":42,"updated_ms":123}"#).unwrap();
+        std::fs::write(&path, r#"{"backend":"wechat","phase":"armed","microphone":"Test microphone","peak":21218,"partials":2,"finals":1,"last_error":"","pid":42,"updated_ms":123}"#).unwrap();
         let status = Status::read(&path).unwrap();
         assert_eq!(status.backend_label(), "微信识别");
-        assert_eq!(status.microphone, "JZAO");
+        assert_eq!(status.microphone, "Test microphone");
         assert_eq!(status.pid, 42);
         assert_eq!(status.peak, 21_218);
         std::fs::write(&path, "{").unwrap();
