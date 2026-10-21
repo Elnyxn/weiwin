@@ -473,11 +473,11 @@ impl App {
             (LABEL_SHORTCUT, 52, 481, 180, 22, 0),
             (LABEL_PLUS, 326, 480, 18, 22, 3),
             (LABEL_H, 352, 480, 24, 22, 3),
-            (UPDATE_TITLE, 128, 62, 216, 22, 4),
-            (UPDATE_BODY, 128, 89, 216, 18, 1),
-            (UPDATE_DOWNLOAD, 128, 119, 85, 30, 3),
-            (UPDATE_SKIP, 219, 119, 105, 30, 3),
-            (UPDATE_CLOSE, 346, 54, 24, 24, 3),
+            (UPDATE_TITLE, 28, 107, 216, 22, 4),
+            (UPDATE_BODY, 28, 134, 216, 18, 1),
+            (UPDATE_DOWNLOAD, 28, 164, 85, 30, 3),
+            (UPDATE_SKIP, 119, 164, 105, 30, 3),
+            (UPDATE_CLOSE, 246, 99, 24, 24, 3),
         ];
         for (id, x, y, w, h, font) in positions {
             let control = self.control(id);
@@ -496,7 +496,7 @@ impl App {
             (APP_TITLE, 50, 10, 80, 24),
             (MINIMIZE, 312, 0, 44, 42),
             (CLOSE, 356, 0, 44, 42),
-            (GITHUB, 140, 5, 32, 32),
+            (GITHUB, 12, 50, 36, 36),
         ] {
             SetWindowPos(
                 self.control(id),
@@ -799,10 +799,10 @@ impl App {
             );
         }
         let rect = RECT {
-            left: scale(108, self.dpi),
-            top: scale(40, self.dpi),
-            right: scale(388, self.dpi),
-            bottom: scale(190, self.dpi),
+            left: scale(8, self.dpi),
+            top: scale(84, self.dpi),
+            right: scale(288, self.dpi),
+            bottom: scale(232, self.dpi),
         };
         InvalidateRect(self.hwnd, &rect, 0);
     }
@@ -1073,7 +1073,7 @@ impl App {
         let pressed = draw.itemState & ODS_SELECTED != 0;
         FillRect(draw.hDC, &draw.rcItem, self.white);
         if draw.CtlID == GITHUB as u32 {
-            FillRect(draw.hDC, &draw.rcItem, self.caption);
+            FillRect(draw.hDC, &draw.rcItem, self.white);
             DrawIconEx(
                 draw.hDC,
                 (draw.rcItem.right - scale(18, self.dpi)) / 2,
@@ -1287,7 +1287,6 @@ unsafe extern "system" fn procedure(
                 && point.y < scale(view::HEADER, app.dpi)
                 && point.x >= scale(40, app.dpi)
                 && point.x < scale(312, app.dpi)
-                && !(point.x >= scale(140, app.dpi) && point.x < scale(172, app.dpi))
             {
                 HTCAPTION as isize
             } else {

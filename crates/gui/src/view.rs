@@ -352,10 +352,10 @@ pub unsafe fn update_bubble(dc: HDC, dpi: u32, available: bool) {
         return;
     };
     let h = if available { 126. } else { 78. };
-    c.rounded(114., 50., 268., h, 10., 0x180f172a, false);
-    c.rounded(112., 47., 268., h, 10., 0xfffafcff, false);
-    c.rounded(112., 47., 268., h, 10., 0xffdbe3ec, true);
-    c.polygon(&[(150., 48.), (156., 41.), (162., 48.)], 0xfffafcff, false);
+    c.rounded(14., 95., 268., h, 10., 0x180f172a, false);
+    c.rounded(12., 92., 268., h, 10., 0xfffafcff, false);
+    c.rounded(12., 92., 268., h, 10., 0xffdbe3ec, true);
+    c.polygon(&[(24., 93.), (30., 86.), (36., 93.)], 0xfffafcff, false);
 }
 
 pub unsafe fn update_badge(dc: HDC, dpi: u32) {
