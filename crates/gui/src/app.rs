@@ -789,6 +789,12 @@ impl App {
 
     unsafe fn update_bubble(&mut self, show: bool) {
         self.update_visible = show;
+        // Native STATIC children paint above the parent's buffered canvas.
+        // Hide the labels covered by the popover instead of cutting holes in it.
+        let covered = show && self.update_release.is_some();
+        for id in [LABEL_STATUS, LABEL_ERROR] {
+            ShowWindow(self.control(id), if covered { SW_HIDE } else { SW_SHOW });
+        }
         for id in [UPDATE_TITLE, UPDATE_BODY, UPDATE_CLOSE] {
             ShowWindow(self.control(id), if show { SW_SHOW } else { SW_HIDE });
         }
