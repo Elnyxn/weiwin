@@ -1,0 +1,12 @@
+/target/
+/private/
+/artifacts/
+/dist/
+/research/
+/HANDOFF*.md
+/.github-account
+*.exe
+*.dll
+*.pdb
+__pycache__/
+*.pyc

@@ -1,0 +1,10 @@
+[package]
+name = "wechat-voice"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+wechat-voice-protocol = { path = "../protocol" }
+wechat-voice-backend = { path = "../backend" }
+wechat-voice-audio = { path = "../audio" }

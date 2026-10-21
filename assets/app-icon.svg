@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512">
+  <title>微win</title>
+  <desc>绿色圆角方块、白色麦克风与右下角双聊天气泡，纯色扁平应用图标。</desc>
+  <rect x="24" y="24" width="464" height="464" rx="102" fill="#08ad70"/>
+  <g fill="#fff">
+    <rect x="192" y="108" width="100" height="204" rx="50"/>
+    <path d="M154 250v16a88 88 0 0 0 176 0v-16" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round"/>
+    <path d="M242 354v51m-32 0h64" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round"/>
+    <path d="M374 339c-23 0-42 15-42 34 0 10 5 19 14 25l-9 15 21-9c5 2 10 3 16 3 23 0 42-15 42-34s-19-34-42-34Z"/>
+    <path d="M416 378c-20 0-37 13-37 30s17 30 37 30c4 0 8 0 12-1l21 9-10-16c9-6 14-14 14-22 0-17-17-30-37-30Z" stroke="#08ad70" stroke-width="7" stroke-linejoin="round"/>
+  </g>
+  <g fill="#08ad70">
+    <circle cx="361" cy="369" r="4.5"/>
+    <circle cx="385" cy="369" r="4.5"/>
+    <circle cx="405" cy="404" r="4"/>
+    <circle cx="426" cy="404" r="4"/>
+  </g>
+</svg>

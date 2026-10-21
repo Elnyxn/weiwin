@@ -1,0 +1,27 @@
+[package]
+name = "wechat-voice-backend"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+wechat-voice-protocol = { path = "../protocol" }
+wechat-voice-audio = { path = "../audio" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bytes = "1"
+aes = "0.8"
+crypto-bigint = { version = "0.6.1", default-features = false }
+subtle = "2.6"
+getrandom = "0.4"
+sha2 = "0.11"
+md-5 = "0.11"
+tungstenite = { version = "0.30", default-features = false, features = ["handshake"] }
+
+[target.'cfg(windows)'.dependencies]
+tungstenite = { version = "0.30", default-features = false, features = ["native-tls"] }
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Diagnostics_Debug", "Win32_System_Threading", "Win32_System_SystemInformation"] }
+
+[target.'cfg(not(windows))'.dependencies]
+tungstenite = { version = "0.30", default-features = false, features = ["rustls-tls-webpki-roots"] }
+rustls = { version = "0.23", default-features = false, features = ["std", "ring", "tls12"] }

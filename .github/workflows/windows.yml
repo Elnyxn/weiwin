@@ -1,0 +1,83 @@
+name: Windows build and release
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Select native Rust MSVC toolchain
+        run: |
+          $ErrorActionPreference = 'Stop'
+          rustup toolchain install stable --profile minimal --component rustfmt
+          if ($LASTEXITCODE) { throw 'rustup toolchain installation failed' }
+          rustup default stable
+          if ($LASTEXITCODE) { throw 'rustup toolchain selection failed' }
+          rustup target add x86_64-pc-windows-msvc
+          if ($LASTEXITCODE) { throw 'rustup target installation failed' }
+      - name: Check formatting and packaging regressions
+        run: |
+          cargo fmt --all -- --check
+          if ($LASTEXITCODE) { throw 'format check failed' }
+          python -m unittest discover -s packaging -p 'test_*.py'
+          if ($LASTEXITCODE) { throw 'packaging tests failed' }
+      - name: Test, build static CRT and package both distributions
+        id: build
+        env:
+          RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
+        run: ./packaging/build-windows.ps1 -ExpectedTag $env:RELEASE_TAG
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: windows-x64-distributions
+          path: dist/release/*
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: windows
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: windows-x64-distributions
+          path: release
+      - name: Publish only after ZIP, installer and checksums are uploaded
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_VERSION: ${{ needs.windows.outputs.version }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+        run: >-
+          python3 packaging/publish_release.py --directory release
+          --version "$RELEASE_VERSION" --tag "$RELEASE_TAG"
+          --repository "$RELEASE_REPOSITORY"
