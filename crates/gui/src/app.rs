@@ -642,7 +642,11 @@ impl App {
             (&mut animations as *mut i32).cast(),
             0,
         );
-        if self.animate && animations != 0 && IsWindowVisible(self.hwnd) != 0 {
+        if self.animate
+            && animations != 0
+            && IsWindowVisible(self.hwnd) != 0
+            && IsIconic(self.hwnd) == 0
+        {
             SetTimer(self.hwnd, 2, 60, None);
         } else {
             KillTimer(self.hwnd, 2);
@@ -1322,7 +1326,7 @@ unsafe extern "system" fn procedure(
                 }
                 app.check_updates(false);
             } else if wparam == 2 {
-                if IsWindowVisible(hwnd) == 0 {
+                if IsWindowVisible(hwnd) == 0 || IsIconic(hwnd) != 0 {
                     KillTimer(hwnd, 2);
                 } else {
                     let rect = RECT {
@@ -1369,7 +1373,7 @@ unsafe extern "system" fn procedure(
             0
         }
         WM_SIZE => {
-            if !app.controls.is_empty() {
+            if wparam != SIZE_MINIMIZED as usize && !app.controls.is_empty() {
                 app.layout();
             }
             0
