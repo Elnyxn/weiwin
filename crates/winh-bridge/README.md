@@ -50,6 +50,8 @@ host 可复用 `wechat_winh_bridge::ipc::{BridgeRequest, BridgeEvent, BridgeErro
 
 保留真实 config、audio config、recognizer 工厂及句柄；回调 setter 先透传 SDK，成功后保存函数/context。未观察到setter时，从版本门控的SDK事件对象只读恢复原callback/context；显式setter(None)不恢复。无法取得callback时返回已完成的自有async，并经已有取消回调报告，不启动任何识别，不向Carbon传播NOT_IMPL，不回退Microsoft ASR。continuous start 创建自有 async handle，收到 broker started 才完成。stop 等待final回调排空后才完成 stopped；Draining期间重复stop共享终结状态。回调重入 stop/wait 时采用 broker acknowledgement。
 
+输入保护先结束后台、原生组件稍后才调用 stop 时，补发一次 SessionStopped 确认该 stop；重复 stop 不重复派发。这样原生面板能完成暂停并再次通过麦克风启动。
+
 partial reason=2、final reason=3。每句 partial/final 共用 result_id，final 后下一句换 ID。首次文字前合成 speech-start，final 后合成 speech-end。SDK 回调在独立有序线程执行，不持 registry、session 或 pipe mutex。
 
 fake handles 使用永久可识别的 0x5758 高位标签和不复用的计数器；释放后的标签永不透传 SDK。event 按回调作用域借用：消费者可主动 release，回调返回后清理仍残留的 event。event_get_result 返回独立拥有 Arc 的 result handle，event 到期后仍有效，直到消费者释放。result_get_property_bag 每次创建真正 SDK property bag，拥有权不共享，微软的 getter/free/release 原样工作。

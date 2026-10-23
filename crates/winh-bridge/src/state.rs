@@ -162,6 +162,7 @@ struct Recognizer {
     session: String,
     start: Option<Arc<Completion>>,
     stop: Option<Arc<Completion>>,
+    stop_requested: bool,
     language: String,
     device: String,
     utterance: u64,
@@ -177,6 +178,7 @@ impl Default for Recognizer {
             session: String::new(),
             start: None,
             stop: None,
+            stop_requested: false,
             language: String::new(),
             device: String::new(),
             utterance: 0,
@@ -316,6 +318,7 @@ impl Engine {
         r.session.clear();
         r.start = Some(done);
         r.stop = None;
+        r.stop_requested = false;
         r.language = language.clone();
         r.device = device.clone();
         r.utterance = 0;
@@ -391,6 +394,9 @@ impl Engine {
     }
     pub(crate) fn stop(&self, reco: usize) -> Result<usize, Status> {
         let mut state = lock(&self.state);
+        if state.suspended {
+            return Err(abi::NOT_IMPL);
+        }
         let r = state.recos.get(&reco).ok_or(abi::NOT_IMPL)?;
         let idle = matches!(r.phase, Phase::Idle | Phase::Failed);
         let done = r
@@ -400,9 +406,33 @@ impl Engine {
         let handle = state.allocate(Entry::Async(done.clone()))?;
         let r = state.recos.get_mut(&reco).ok_or(abi::INVALID_HANDLE)?;
         if idle {
+            if r.phase == Phase::Idle && !r.stop_requested && !r.session.is_empty() {
+                // The backend may finish before Carbon processes the editing
+                // key. Its later Stop still needs a SessionStopped acknowledgement
+                // while Carbon is actually stopping, not just a completed async.
+                r.stop_requested = true;
+                r.phase = Phase::Draining;
+                r.stop = Some(done.clone());
+                done.broker_ready(abi::OK);
+                let job = Job {
+                    reco,
+                    generation: r.generation,
+                    kind: CallbackKind::Stopped,
+                    payload: Arc::new(Payload::empty(reco, r.generation, r.session.clone())),
+                    finish_stop: Some(done),
+                    marks_idle: true,
+                };
+                self.pending.fetch_add(1, Ordering::SeqCst);
+                drop(state);
+                if self.enqueue_jobs(vec![job]) {
+                    self.disconnected("bridge callback dispatcher unavailable or full");
+                }
+                return Ok(handle);
+            }
             done.finish(abi::OK);
             return Ok(handle);
         }
+        r.stop_requested = true;
         if r.stop.is_some() {
             return Ok(handle);
         }
@@ -1058,6 +1088,69 @@ mod tests {
     }
 
     #[test]
+    fn native_stop_after_backend_terminal_callback_receives_its_own_acknowledgement() {
+        let (e, requests, jobs, start, generation) = active();
+        e.receive(BridgeEvent::Started {
+            reco: 7,
+            generation,
+            session: "input-interrupted".into(),
+        });
+        e.dispatch(jobs.recv().unwrap());
+        e.receive(BridgeEvent::Partial {
+            reco: 7,
+            generation,
+            text: "uncommitted".into(),
+            offset: 0,
+            duration: 1,
+        });
+        for kind in [CallbackKind::SpeechStart, CallbackKind::Recognizing] {
+            let job = jobs.recv().unwrap();
+            assert_eq!(job.kind as usize, kind as usize);
+            e.dispatch(job);
+        }
+        e.receive(BridgeEvent::Stopped {
+            reco: 7,
+            generation,
+        });
+        let speech_end = jobs.recv().unwrap();
+        assert!(matches!(speech_end.kind, CallbackKind::SpeechEnd));
+        e.dispatch(speech_end);
+        let first_stopped = jobs.recv().unwrap();
+        assert!(matches!(first_stopped.kind, CallbackKind::Stopped));
+        e.dispatch(first_stopped);
+        assert!(jobs.try_recv().is_err());
+        let stop = e.stop(7).unwrap();
+        assert!(requests.try_recv().is_err());
+        assert_eq!(e.completion(stop).unwrap().wait(0), abi::TIMEOUT);
+        e.receive(BridgeEvent::Stopped {
+            reco: 7,
+            generation,
+        });
+        let stopped = jobs.recv().unwrap();
+        assert!(matches!(stopped.kind, CallbackKind::Stopped));
+        e.dispatch(stopped);
+        assert!(jobs.try_recv().is_err());
+        assert_eq!(e.completion(stop).unwrap().wait(0), abi::OK);
+        let repeated = e.stop(7).unwrap();
+        assert_eq!(e.completion(repeated).unwrap().wait(0), abi::OK);
+        assert!(jobs.try_recv().is_err());
+        let next = e.start(7, "zh-CN".into(), String::new()).unwrap();
+        assert!(
+            matches!(requests.recv().unwrap(), BridgeRequest::Start { generation: g, .. } if g > generation)
+        );
+        // Neither an old input cancellation nor its late Stopped can end next.
+        e.receive(BridgeEvent::Stopped {
+            reco: 7,
+            generation,
+        });
+        assert!(jobs.try_recv().is_err());
+        assert_eq!(e.completion(next).unwrap().wait(0), abi::TIMEOUT);
+        e.release_async(start);
+        e.release_async(stop);
+        e.release_async(repeated);
+        e.release_async(next);
+    }
+    #[test]
     fn operational_failure_reports_cancel_then_stopped_without_an_sdk_exception() {
         let (engine, _requests, jobs, start, generation) = active();
         let stop = engine.stop(7).unwrap();
@@ -1263,6 +1356,7 @@ mod tests {
         e.release_async(stop);
         assert!(e.suspend_if_idle());
         assert_eq!(e.decline_start(7), Err(abi::NOT_IMPL));
+        assert_eq!(e.stop(7), Err(abi::NOT_IMPL));
     }
 
     #[test]

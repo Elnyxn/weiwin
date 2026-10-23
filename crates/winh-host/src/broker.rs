@@ -224,6 +224,10 @@ fn start(
                 send(&output, &event)
             })
         })();
+        // Error is terminal in the bridge too: it dispatches Canceled/Stopped
+        // and Carbon can immediately start again from those callbacks. Publish
+        // completion before either terminal event, not just before Stopped.
+        worker_completed.store(true, Ordering::Release);
         if let Some(error) = result
             .as_ref()
             .err()
@@ -249,9 +253,6 @@ fn start(
             status.phase("ready");
         }
         println!("结束[{generation}]");
-        // Native SessionStopped can immediately request its next session, before
-        // std::thread publishes is_finished(). Publish our completion first.
-        worker_completed.store(true, Ordering::Release);
         let _ = send(&output, &BridgeEvent::Stopped { reco, generation });
     });
     Active {
